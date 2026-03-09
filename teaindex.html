@@ -93,21 +93,21 @@
             border: 6px solid #c4b8a2;
             border-radius: 20px;
             overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center; /* 確保茶墊永遠置中 */
         }
 
-        /* 茶墊 */
+        /* 茶墊 (由 JS 動態鎖定長寬比例，不再被壓扁) */
         #tea-mat {
-            position: absolute;
-            width: 96%;
-            height: 94%;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            position: relative; /* 改為相對定位，依賴外層 Flex 置中 */
             background-color: var(--mat-color);
             background-image: repeating-linear-gradient(90deg, transparent, transparent 18px, rgba(0,0,0,0.04) 18px, rgba(0,0,0,0.04) 20px);
             border-radius: 12px;
             box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
             overflow: hidden;
+            /* 預設大小，JS會自動覆寫 */
+            width: 100%; height: 100%; 
         }
 
         /* 桌旗 */
@@ -127,7 +127,7 @@
             z-index: 0;
         }
 
-        /* 放置槽 (長寬改由 JS 動態計算) */
+        /* 放置槽 */
         .slot {
             position: absolute;
             border: 3px dashed var(--slot-border);
@@ -140,7 +140,7 @@
         .slot.highlight { background: rgba(255, 255, 255, 0.5); border-color: var(--accent); transform: scale(1.05); }
         .slot.filled { border: none; }
 
-        /* 字卡槽位 (長寬改由 JS 動態計算) */
+        /* 字卡槽位 */
         .label-slot {
             position: absolute;
             background: rgba(255, 255, 255, 0.9);
@@ -267,15 +267,20 @@
         #result-dialog h2 { margin: 0 0 10px 0; color: var(--accent); font-size: 1.2rem;}
         #result-dialog button { background: var(--accent); color: white; border: none; padding: 8px 20px; border-radius: 20px; cursor: pointer; margin-top: 10px; font-weight: bold; font-size: 0.9rem;}
 
-        /* ✨ 手機版專屬優化 (當螢幕高度較低時，壓縮 UI 留出空間給茶席) */
+        /* ✨ 終極手機版優化：當螢幕高度不足時，強力壓縮 UI 厚度，拯救被擠壓的畫面！ */
         @media screen and (max-height: 500px) {
-            header { padding: 5px 15px; font-size: 0.9rem; }
-            .instruction { padding: 5px; font-size: 0.85rem; margin-bottom: -5px;}
+            header { padding: 4px 15px; font-size: 0.85rem; }
+            .stats { gap: 10px; }
+            /* 大幅減少邊距與留白 */
+            main { padding: 4px; padding-bottom: 6px; gap: 4px; }
+            .instruction { padding: 4px; font-size: 0.8rem; margin-bottom: 0; }
             #inventory-wrapper { border-radius: 10px; }
-            #inventory { height: 110px; padding: 28px 10px 10px 10px; gap: 8px;}
-            .scroll-hint { font-size: 0.75rem; top: 6px; }
-            .inv-cell { min-width: 70px; height: 70px; border-radius: 10px; }
-            #inventory::-webkit-scrollbar { height: 8px; }
+            /* 工具欄高度瘦身 */
+            #inventory { height: 95px; padding: 22px 8px 8px 8px; gap: 8px;}
+            .scroll-hint { font-size: 0.75rem; top: 4px; }
+            .inv-cell { min-width: 60px; height: 60px; border-radius: 8px; }
+            .item img { max-width: 130%; max-height: 130%; }
+            #inventory::-webkit-scrollbar { height: 6px; }
             #result-dialog { padding: 10px 15px; bottom: 10px; left: 10px;}
             #result-dialog h2 { font-size: 1rem; margin-bottom: 5px;}
         }
@@ -298,7 +303,7 @@
 </header>
 
 <main>
-    <div class="instruction" id="hint">【第一階段】擺放器具：長按器具並拖曳到正確位置。放錯了可直接拖回或修正位置！</div>
+    <div class="instruction" id="hint">【第一階段】擺放器具：長按器具並拖曳到正確位置。放錯了可直接拖回或修正！</div>
     <div id="game-board">
         <div id="tea-mat">
             <div id="table-runner"></div>
@@ -369,14 +374,35 @@
     const mat = document.getElementById('tea-mat');
     const inv = document.getElementById('inventory');
 
-    // 動態縮放引擎：確保手機等小螢幕不會超出畫面
+    // ✨ 全新動態縮放引擎：強制鎖定 2:1 茶席完美比例，避免手機寬螢幕造成擠壓變形
     function updateBoardScale() {
+        const board = document.getElementById('game-board');
+        if (!board) return;
+
+        // 取得外層容器的可用長寬
+        const bw = board.clientWidth * 0.96;
+        const bh = board.clientHeight * 0.94;
+        
         const BASE_WIDTH = 1100;
         const BASE_HEIGHT = 550;
-        // 根據螢幕長寬比較，找出最適合的縮放比例
-        const scaleX = mat.clientWidth / BASE_WIDTH;
-        const scaleY = mat.clientHeight / BASE_HEIGHT;
-        let boardScale = Math.min(scaleX, scaleY);
+        const TARGET_RATIO = BASE_WIDTH / BASE_HEIGHT; // 完美比例 2.0
+        
+        let finalW = bw;
+        let finalH = bh;
+        
+        // 判斷該以寬度還是高度為主來縮放，確保不變形
+        if (bw / bh > TARGET_RATIO) {
+            finalW = bh * TARGET_RATIO;
+        } else {
+            finalH = bw / TARGET_RATIO;
+        }
+        
+        // 強制寫入完美尺寸
+        mat.style.width = finalW + 'px';
+        mat.style.height = finalH + 'px';
+        
+        // 計算縮放倍率以調整內部物品
+        let boardScale = finalW / BASE_WIDTH;
         if (boardScale > 1.2) boardScale = 1.2; // 限制最大放大倍率
 
         boardSlots.forEach(s => {
@@ -397,7 +423,7 @@
                     const labelWidth = 70 * boardScale;
                     const labelHeight = 28 * boardScale;
                     let fSize = 0.85 * boardScale;
-                    if(fSize < 0.65) fSize = 0.65; // 保底字體大小
+                    if(fSize < 0.65) fSize = 0.65; 
                     ls.style.width = `${labelWidth}px`;
                     ls.style.height = `${labelHeight}px`;
                     ls.style.left = `calc(${pos.x}% - ${labelWidth/2}px)`;
@@ -417,8 +443,13 @@
             mat.appendChild(slot);
         });
         
-        updateBoardScale(); // 啟動時先算一次比例
-        window.addEventListener('resize', updateBoardScale); // 旋轉螢幕時自動重算
+        updateBoardScale(); // 啟動時計算一次完美比例
+        
+        // 螢幕翻轉或調整大小時，延遲一下重新計算以確保準確
+        window.addEventListener('resize', () => {
+            setTimeout(updateBoardScale, 100);
+        });
+        
         loadPhase1();
     }
 

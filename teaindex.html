@@ -22,10 +22,33 @@
             margin: 0;
             display: flex;
             flex-direction: column;
-            /* 解決平板/手機下方被切掉的問題 */
             height: 100vh;
             height: 100dvh; 
             overflow: hidden;
+        }
+
+        /* 手機直向模式的旋轉提示 */
+        #orientation-warning {
+            display: none;
+        }
+        @media screen and (orientation: portrait) {
+            #orientation-warning {
+                display: flex;
+                position: fixed;
+                top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(93, 109, 49, 0.98);
+                color: white;
+                z-index: 9999;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+                font-size: 1.4rem;
+                font-weight: bold;
+                line-height: 1.6;
+            }
+            /* 在直向時隱藏遊戲主體，強制要求旋轉 */
+            header, main, #result-dialog { display: none !important; }
         }
 
         header {
@@ -47,7 +70,7 @@
             display: flex;
             flex-direction: column;
             padding: 10px;
-            padding-bottom: 20px; /* 增加底部留白，確保捲軸不被裝置邊緣擋住 */
+            padding-bottom: 20px; 
             gap: 10px;
             overflow: hidden;
         }
@@ -104,7 +127,7 @@
             z-index: 0;
         }
 
-        /* 放置槽 */
+        /* 放置槽 (長寬改由 JS 動態計算) */
         .slot {
             position: absolute;
             border: 3px dashed var(--slot-border);
@@ -117,15 +140,12 @@
         .slot.highlight { background: rgba(255, 255, 255, 0.5); border-color: var(--accent); transform: scale(1.05); }
         .slot.filled { border: none; }
 
-        /* 字卡槽位 */
+        /* 字卡槽位 (長寬改由 JS 動態計算) */
         .label-slot {
             position: absolute;
-            width: 70px;
-            height: 28px;
             background: rgba(255, 255, 255, 0.9);
             border: 2px dashed #888;
             border-radius: 6px;
-            font-size: 0.85rem;
             font-weight: bold;
             display: none;
             justify-content: center;
@@ -144,14 +164,10 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            /* cursor 改為 grab，觸控時依賴 JS 邏輯判斷 */
             cursor: grab;
-            /* 允許 Y 軸 (可能需要)，但我們主要處理 X 軸滑動 */
             touch-action: pan-x pan-y;
         }
-        .item.dragging {
-            cursor: grabbing;
-        }
+        .item.dragging { cursor: grabbing; }
         .item img {
             max-width: 140%; 
             max-height: 140%;
@@ -173,9 +189,7 @@
             touch-action: pan-x pan-y;
             white-space: nowrap;
         }
-        .name-tag.dragging {
-            cursor: grabbing;
-        }
+        .name-tag.dragging { cursor: grabbing; }
 
         /* 底部工具欄外層容器 */
         #inventory-wrapper {
@@ -186,7 +200,7 @@
             flex-shrink: 0;
         }
 
-        /* 滑動提示文字 (改為絕對定位，懸浮於滑動空間上方) */
+        /* 滑動提示文字 */
         .scroll-hint {
             position: absolute;
             top: 12px;
@@ -197,45 +211,27 @@
             color: #8c7866;
             font-weight: bold;
             animation: pulseHint 2s infinite;
-            pointer-events: none; /* 關鍵：讓手指觸控能穿透文字，直接滑動下方的 padding 區！ */
+            pointer-events: none; 
             z-index: 10;
         }
-        @keyframes pulseHint {
-            0% { opacity: 0.6; }
-            50% { opacity: 1; }
-            100% { opacity: 0.6; }
-        }
+        @keyframes pulseHint { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
 
         /* 底部工具欄本身 */
         #inventory {
-            height: 155px; /* 加高整體以容納上方提示空間與下方捲軸 */
+            height: 155px; 
             display: flex;
             gap: 12px;
-            padding: 38px 12px 18px 12px; /* 頂部留出 38px padding，形成整個頂部區域的可滑動空間 */
-            overflow-x: scroll; /* 強制顯示捲軸 */
+            padding: 38px 12px 18px 12px; 
+            overflow-x: scroll; 
             align-items: center;
             -webkit-overflow-scrolling: touch; 
-            border-radius: 15px; /* 貼合外框圓角 */
+            border-radius: 15px; 
         }
 
-        /* 強制顯示底部捲軸 (Scrollbar) 並美化 */
-        #inventory::-webkit-scrollbar {
-            height: 14px; /* 加粗捲軸高度 */
-            -webkit-appearance: none;
-        }
-        #inventory::-webkit-scrollbar-track {
-            background: #f0f0f0;
-            border-radius: 10px;
-            margin: 0 15px; 
-        }
-        #inventory::-webkit-scrollbar-thumb {
-            background: #b5a28c; 
-            border-radius: 10px;
-            border: 3px solid #f0f0f0; 
-        }
-        #inventory::-webkit-scrollbar-thumb:hover {
-            background: #8c7866; 
-        }
+        #inventory::-webkit-scrollbar { height: 14px; -webkit-appearance: none;}
+        #inventory::-webkit-scrollbar-track { background: #f0f0f0; border-radius: 10px; margin: 0 15px; }
+        #inventory::-webkit-scrollbar-thumb { background: #b5a28c; border-radius: 10px; border: 3px solid #f0f0f0; }
+        #inventory::-webkit-scrollbar-thumb:hover { background: #8c7866; }
 
         .inv-cell {
             min-width: 95px; 
@@ -250,19 +246,6 @@
             flex-shrink: 0;
             transition: opacity 0.3s;
         }
-
-        .overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-        }
-        .card { background: white; padding: 40px; border-radius: 25px; text-align: center; max-width: 450px; width: 90%; line-height: 1.6;}
-        .card button { background: var(--accent); color: white; border: none; padding: 12px 30px; border-radius: 30px; cursor: pointer; margin-top: 20px; font-size: 1.1rem; font-weight: bold;}
-        .card button:hover { opacity: 0.9; }
 
         #result-dialog {
             position: fixed;
@@ -280,15 +263,31 @@
             text-align: center;
             animation: popIn 0.5s ease-out forwards;
         }
-        @keyframes popIn {
-            0% { transform: scale(0.8); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
+        @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         #result-dialog h2 { margin: 0 0 10px 0; color: var(--accent); font-size: 1.2rem;}
         #result-dialog button { background: var(--accent); color: white; border: none; padding: 8px 20px; border-radius: 20px; cursor: pointer; margin-top: 10px; font-weight: bold; font-size: 0.9rem;}
+
+        /* ✨ 手機版專屬優化 (當螢幕高度較低時，壓縮 UI 留出空間給茶席) */
+        @media screen and (max-height: 500px) {
+            header { padding: 5px 15px; font-size: 0.9rem; }
+            .instruction { padding: 5px; font-size: 0.85rem; margin-bottom: -5px;}
+            #inventory-wrapper { border-radius: 10px; }
+            #inventory { height: 110px; padding: 28px 10px 10px 10px; gap: 8px;}
+            .scroll-hint { font-size: 0.75rem; top: 6px; }
+            .inv-cell { min-width: 70px; height: 70px; border-radius: 10px; }
+            #inventory::-webkit-scrollbar { height: 8px; }
+            #result-dialog { padding: 10px 15px; bottom: 10px; left: 10px;}
+            #result-dialog h2 { font-size: 1rem; margin-bottom: 5px;}
+        }
     </style>
 </head>
 <body>
+
+<!-- 手機版轉向提示 -->
+<div id="orientation-warning">
+    <div style="font-size: 4rem; margin-bottom: 15px;">📱🔄</div>
+    <div>請將手機轉為「橫向」<br>以獲得最佳遊戲體驗！</div>
+</div>
 
 <header>
     <div>🍵 茶席擺設</div>
@@ -306,7 +305,6 @@
         </div>
     </div>
     
-    <!-- 將提示文字與工具列包裝在一起，實現全區塊皆可滑動 -->
     <div id="inventory-wrapper">
         <div class="scroll-hint">⬅️ 左右滑動下方工具列，長按器具拖曳 ➡️</div>
         <div id="inventory"></div>
@@ -371,15 +369,56 @@
     const mat = document.getElementById('tea-mat');
     const inv = document.getElementById('inventory');
 
+    // 動態縮放引擎：確保手機等小螢幕不會超出畫面
+    function updateBoardScale() {
+        const BASE_WIDTH = 1100;
+        const BASE_HEIGHT = 550;
+        // 根據螢幕長寬比較，找出最適合的縮放比例
+        const scaleX = mat.clientWidth / BASE_WIDTH;
+        const scaleY = mat.clientHeight / BASE_HEIGHT;
+        let boardScale = Math.min(scaleX, scaleY);
+        if (boardScale > 1.2) boardScale = 1.2; // 限制最大放大倍率
+
+        boardSlots.forEach(s => {
+            const slot = document.getElementById(`slot-${s.id}`);
+            if (slot) {
+                const scaledSize = s.size * boardScale;
+                slot.style.width = `${scaledSize}px`;
+                slot.style.height = `${scaledSize}px`;
+                slot.style.left = `calc(${s.x}% - ${scaledSize/2}px)`;
+                slot.style.top = `calc(${s.y}% - ${scaledSize/2}px)`;
+            }
+        });
+
+        if (phase === 2) {
+            Object.entries(labelConfig).forEach(([name, pos]) => {
+                const ls = document.querySelector(`.label-slot[data-match="${name}"]`);
+                if (ls) {
+                    const labelWidth = 70 * boardScale;
+                    const labelHeight = 28 * boardScale;
+                    let fSize = 0.85 * boardScale;
+                    if(fSize < 0.65) fSize = 0.65; // 保底字體大小
+                    ls.style.width = `${labelWidth}px`;
+                    ls.style.height = `${labelHeight}px`;
+                    ls.style.left = `calc(${pos.x}% - ${labelWidth/2}px)`;
+                    ls.style.top = `calc(${pos.y}% - ${labelHeight/2}px)`;
+                    ls.style.fontSize = `${fSize}rem`;
+                }
+            });
+        }
+    }
+
     function init() {
         boardSlots.forEach(s => {
             const slot = document.createElement('div');
             slot.className = 'slot'; 
             slot.id = `slot-${s.id}`;
             if (s.group) slot.dataset.group = s.group;
-            slot.style.cssText = `width:${s.size}px; height:${s.size}px; left:calc(${s.x}% - ${s.size/2}px); top:calc(${s.y}% - ${s.size/2}px);`;
             mat.appendChild(slot);
         });
+        
+        updateBoardScale(); // 啟動時先算一次比例
+        window.addEventListener('resize', updateBoardScale); // 旋轉螢幕時自動重算
         loadPhase1();
     }
 
@@ -404,17 +443,16 @@
     function setupInventoryDrag(el, isLabel) {
         let isDraging = false, sx, sy, il, it;
         let clone = null;
-        let pressTimer = null; // 用於判斷長按
-        let isScrolling = false; // 判斷是否正在滑動
-        const PRESS_DELAY = 150; // 長按延遲毫秒數，稍微按住即可觸發拖曳
+        let pressTimer = null; 
+        let isScrolling = false; 
+        const PRESS_DELAY = 150; 
 
         const startDragAction = (clientX, clientY) => {
-            if (isScrolling) return; // 如果已經判定為滑動，則不觸發拖曳
+            if (isScrolling) return; 
 
             isDraging = true; 
-            el.classList.add('dragging'); // 可選：加入拖曳中的視覺回饋
+            el.classList.add('dragging'); 
             
-            // 防止滾動干擾
             document.body.style.overflow = 'hidden'; 
 
             const r = el.getBoundingClientRect();
@@ -427,7 +465,6 @@
             il = r.left; it = r.top;
             sx = clientX; sy = clientY;
 
-            // 將 clone 移到手指正下方 (可選，讓拖曳感覺更跟手)
             clone.style.left = (clientX - r.width / 2) + 'px';
             clone.style.top = (clientY - r.height / 2) + 'px';
             il = clientX - r.width / 2;
@@ -442,19 +479,16 @@
             const p = e.touches ? e.touches[0] : e;
             sx = p.clientX; sy = p.clientY;
 
-            // 設定長按計時器
             pressTimer = setTimeout(() => {
                 if (!isScrolling) {
                     startDragAction(p.clientX, p.clientY);
                 }
             }, PRESS_DELAY);
 
-            // 加入事件監聽，注意 passive 設為 false 允許 preventDefault
             window.addEventListener('mousemove', handleMove, { passive: false }); 
             window.addEventListener('touchmove', handleMove, { passive: false });
             window.addEventListener('mouseup', handleEnd); 
             window.addEventListener('touchend', handleEnd);
-            // 當觸控被系統取消時也要處理 (例如滑出螢幕)
             window.addEventListener('touchcancel', handleEnd);
         };
 
@@ -462,16 +496,13 @@
             const p = e.touches ? e.touches[0] : e;
 
             if (!isDraging) {
-                // 如果還沒開始拖曳，判斷是否為滑動
                 if (Math.abs(p.clientX - sx) > 10 || Math.abs(p.clientY - sy) > 10) {
                     isScrolling = true;
-                    clearTimeout(pressTimer); // 取消長按判定
-                    // 如果是 touchmove 且已經判定為滑動，不阻止預設行為，讓捲軸自然捲動
+                    clearTimeout(pressTimer); 
                 }
                 return; 
             }
 
-            // 如果正在拖曳，阻止預設滑動行為
             e.preventDefault(); 
             
             clone.style.left = (il + (p.clientX - sx)) + 'px'; 
@@ -483,9 +514,9 @@
         };
 
         const handleEnd = (e) => {
-            clearTimeout(pressTimer); // 清除長按計時器
+            clearTimeout(pressTimer); 
             el.classList.remove('dragging');
-            document.body.style.overflow = ''; // 恢復滾動
+            document.body.style.overflow = ''; 
 
             window.removeEventListener('mousemove', handleMove); 
             window.removeEventListener('touchmove', handleMove);
@@ -495,7 +526,7 @@
 
             if (!isDraging || !clone) {
                 isDraging = false;
-                return; // 如果沒有在拖曳，直接結束
+                return; 
             }
 
             isDraging = false; 
@@ -543,7 +574,6 @@
         };
         
         el.addEventListener('mousedown', handleStart); 
-        // passive: false 允許在 touchmove 時阻止預設行為 (但我們現在根據情況決定是否阻止)
         el.addEventListener('touchstart', handleStart, {passive: false});
     }
 
@@ -551,7 +581,6 @@
         let isDraging = false, sx, sy, il, it;
         let pressTimer = null;
         let isScrolling = false;
-        const PRESS_DELAY = 150;
 
         const startDragAction = (clientX, clientY) => {
             if (phase === 2 && !isLabel) return;
@@ -590,7 +619,6 @@
             el.style.cssText = `position:fixed; width:${r.width}px; height:${r.height}px; left:${il}px; top:${it}px; z-index:9999; margin:0; cursor:grabbing;`;
             document.body.appendChild(el);
 
-            // 移動到手指位置
             el.style.left = (clientX - r.width / 2) + 'px';
             el.style.top = (clientY - r.height / 2) + 'px';
             il = clientX - r.width / 2;
@@ -609,13 +637,11 @@
             const p = e.touches ? e.touches[0] : e;
             sx = p.clientX; sy = p.clientY;
 
-            // 桌面上的物品因為不需要滑動捲軸，可以縮短判定時間或直接觸發
-            // 這裡為了保持操作一致性，仍使用短暫延遲
             pressTimer = setTimeout(() => {
                 if (!isScrolling) {
                     startDragAction(p.clientX, p.clientY);
                 }
-            }, 50); // 桌面物品長按時間更短，反應更靈敏
+            }, 50); 
 
             window.addEventListener('mousemove', handleMove, {passive: false});
             window.addEventListener('touchmove', handleMove, {passive: false});
@@ -759,9 +785,10 @@
             ls.className = 'label-slot';
             ls.dataset.match = name;
             ls.innerText = "?";
-            ls.style.cssText = `left: calc(${pos.x}% - 35px); top: calc(${pos.y}% - 14px); display: flex;`;
             mat.appendChild(ls);
         });
+
+        updateBoardScale(); // 重算字卡大小位置
 
         const uniqueNames = Object.keys(labelConfig).sort(() => Math.random() - 0.5);
         uniqueNames.forEach(n => {

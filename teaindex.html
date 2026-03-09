@@ -142,9 +142,10 @@
             cursor: grab;
             touch-action: none;
         }
+        /* 恢復底部工具欄圖片大小 */
         .item img {
-            max-width: 160%; /* 放大了工具欄位內的圖片比例 */
-            max-height: 160%;
+            max-width: 140%; 
+            max-height: 140%;
             pointer-events: none;
             object-fit: contain;
             filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.35)); /* 陰影提升立體感 */
@@ -164,9 +165,9 @@
             white-space: nowrap;
         }
 
-        /* 底部工具欄 */
+        /* 底部工具欄 (恢復適合平板滑動的高度) */
         #inventory {
-            height: 140px; /* 加高工具欄以容納更大的圖片 */
+            height: 130px; 
             background: white;
             border-radius: 15px;
             display: flex;
@@ -175,11 +176,13 @@
             overflow-x: auto;
             align-items: center;
             box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+            -webkit-overflow-scrolling: touch; /* 讓平板滑動更順暢 */
         }
 
+        /* 恢復工具欄位格大小 */
         .inv-cell {
-            min-width: 110px; /* 加寬工具欄位格 */
-            height: 110px;    /* 加高工具欄位格 */
+            min-width: 95px; 
+            height: 95px;    
             background: #fafafa;
             border: 1px solid #eee;
             border-radius: 12px;
@@ -191,7 +194,7 @@
             transition: opacity 0.3s;
         }
 
-        /* 全螢幕背景 (僅用於載入圖片視窗) */
+        /* 全螢幕背景 */
         .overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -205,7 +208,7 @@
         .card button { background: var(--accent); color: white; border: none; padding: 12px 30px; border-radius: 30px; cursor: pointer; margin-top: 20px; font-size: 1.1rem; font-weight: bold;}
         .card button:hover { opacity: 0.9; }
 
-        /* 結算視窗 (縮小並懸浮在左下角，絕不遮擋中央茶席) */
+        /* 結算視窗 (懸浮在左下角) */
         #result-dialog {
             position: fixed;
             bottom: 25px; 
@@ -268,64 +271,64 @@
         scoop_rest: { id: 'scoop_rest', name: '則置', img: 'scoop_rest.png', max: 1 },
         caddy: { id: 'caddy', name: '茶倉', img: 'caddy.png', max: 1 },
         lid_rest: { id: 'lid_rest', name: '蓋置', img: 'lid_rest.png', max: 1 },
-        teapot: { id: 'teapot', name: '茶壺', img: 'teapot.png', max: 1, on: 'teapot_stand', scale: '80%' },
+        teapot: { id: 'teapot', name: '茶壺', img: 'teapot.png', max: 1, on: 'teapot_stand', scale: '85%' },
         scoop: { id: 'scoop', name: '茶則', img: 'scoop.png', max: 1, on: 'scoop_rest', scale: '85%' },
         pick: { id: 'pick', name: '茶撥', img: 'pick.png', max: 1, on: 'scoop_rest', scale: '90%' },
         saucer: { id: 'saucer', name: '杯托', img: 'saucer.png', max: 5 }, 
-        cup: { id: 'cup', name: '茶杯', img: 'cup.png', max: 5, on_group: 'saucer', scale: '80%' } // 稍微放大茶杯在杯托上的比例
+        cup: { id: 'cup', name: '茶杯', img: 'cup.png', max: 5, on_group: 'saucer', scale: '85%' } 
     };
 
-    // --- 精確座標位置校正 (整體放大尺寸) ---
+    // --- 精確座標位置校正 (大幅放大桌面上的物品比例) ---
     const boardSlots = [
-        // 畫面上方：五組杯托 (絕對置中對齊, y:15)，尺寸從 85 放大到 100
-        { id: 's1', type: 'saucer', x: 20, y: 18, size: 100, group: 'saucer' },
-        { id: 's2', type: 'saucer', x: 35, y: 18, size: 100, group: 'saucer' },
-        { id: 's3', type: 'saucer', x: 50, y: 18, size: 100, group: 'saucer' }, // 正中央杯
-        { id: 's4', type: 'saucer', x: 65, y: 18, size: 100, group: 'saucer' },
-        { id: 's5', type: 'saucer', x: 80, y: 18, size: 100, group: 'saucer' },
+        // 畫面上方：五組杯托 (大幅放大 size: 130，並微調 y 軸使其空間充裕)
+        { id: 's1', type: 'saucer', x: 20, y: 20, size: 130, group: 'saucer' },
+        { id: 's2', type: 'saucer', x: 35, y: 20, size: 130, group: 'saucer' },
+        { id: 's3', type: 'saucer', x: 50, y: 20, size: 130, group: 'saucer' }, // 正中央杯
+        { id: 's4', type: 'saucer', x: 65, y: 20, size: 130, group: 'saucer' },
+        { id: 's5', type: 'saucer', x: 80, y: 20, size: 130, group: 'saucer' },
         
-        // 正中央：壺承 (完美對齊中間杯 x: 50)，尺寸從 140 放大到 160
-        { id: 'teapot_stand', type: 'teapot_stand', x: 50, y: 55, size: 160 },
+        // 正中央：壺承 (大幅放大至 200)
+        { id: 'teapot_stand', type: 'teapot_stand', x: 50, y: 58, size: 200 },
         
-        // 左手邊：只有茶倉，淨空其他，尺寸從 115 放大到 130
-        { id: 'caddy', type: 'caddy', x: 20, y: 60, size: 130 },
+        // 左手邊：茶倉 (放大至 150)
+        { id: 'caddy', type: 'caddy', x: 20, y: 65, size: 150 },
         
-        // 最右邊：茶盂，尺寸從 120 放大到 140
-        { id: 'waste_bowl', type: 'waste_bowl', x: 90, y: 60, size: 140 },
+        // 最右邊：茶盂 (放大至 170)
+        { id: 'waste_bowl', type: 'waste_bowl', x: 90, y: 65, size: 170 },
         
         // --- 右側群組精準配置 ---
-        // 蓋置：在茶壺右下角，尺寸從 60 放大到 75
-        { id: 'lid_rest', type: 'lid_rest', x: 60, y: 75, size: 75 },
-        // 則置：在茶盂左上角，尺寸從 120 放大到 140
-        { id: 'scoop_rest', type: 'scoop_rest', x: 80, y: 38, size: 140 },
-        // 勻杯跟潔方巾：介於蓋置與則置之間 (互相交換)，勻杯尺寸從 90 放大到 105
-        { id: 'pitcher', type: 'pitcher', x: 70, y: 52, size: 105 },
-        // 潔方巾：在勻杯正下方，尺寸從 45 放大到 60
-        { id: 'cloth', type: 'cloth', x: 70, y: 76, size: 60 } 
+        // 蓋置：在茶壺右下角 (放大至 85)
+        { id: 'lid_rest', type: 'lid_rest', x: 62, y: 80, size: 85 },
+        // 則置：在茶盂左上角 (放大至 170)
+        { id: 'scoop_rest', type: 'scoop_rest', x: 82, y: 44, size: 170 },
+        // 勻杯：介於蓋置與則置之間 (放大至 130)
+        { id: 'pitcher', type: 'pitcher', x: 72, y: 58, size: 130 },
+        // 潔方巾：在勻杯正下方 (放大至 80)
+        { id: 'cloth', type: 'cloth', x: 72, y: 84, size: 80 } 
     ];
 
-    // --- 第二階段字卡：上下交錯疊加設計 (隨器具放大稍微調整座標) ---
+    // --- 第二階段字卡：隨器具放大微調座標，避免擋住大圖 ---
     const labelConfig = {
         // 中央杯組
-        '茶杯': { x: 50, y: 8 },   // 疊在上緣
-        '杯托': { x: 50, y: 28 },  // 疊在下緣，避免遮擋
+        '茶杯': { x: 50, y: 10 },   // 疊在上緣
+        '杯托': { x: 50, y: 32 },  // 疊在下緣
         
         // 中央茶壺組 
-        '茶壺': { x: 50, y: 44 },  
-        '壺承': { x: 50, y: 68 },  
+        '茶壺': { x: 50, y: 48 },  
+        '壺承': { x: 50, y: 74 },  
         
         // 兩側與單品
-        '茶倉': { x: 20, y: 60 },  
-        '茶盂': { x: 90, y: 60 },  
+        '茶倉': { x: 20, y: 65 },  
+        '茶盂': { x: 90, y: 65 },  
         
-        '蓋置': { x: 60, y: 89 },  
-        '勻杯': { x: 70, y: 52 },  
-        '潔方巾': { x: 70, y: 89 }, 
+        '蓋置': { x: 62, y: 92 },  
+        '勻杯': { x: 72, y: 58 },  
+        '潔方巾': { x: 72, y: 92 }, 
         
-        // 則置群組改為左右排列
-        '茶則': { x: 72, y: 32 },  // 左邊
-        '茶撥': { x: 88, y: 32 },  // 右邊
-        '則置': { x: 80, y: 48 }   // 置中於下方
+        // 則置群組左右排列
+        '茶則': { x: 74, y: 36 },  // 左邊
+        '茶撥': { x: 90, y: 36 },  // 右邊
+        '則置': { x: 82, y: 56 }   // 置中於下方
     };
 
     let score = 0, phase = 1, startTime, timerInt;

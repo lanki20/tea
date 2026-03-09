@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>茶席用具擺設互動遊戲</title>
+    <style>
+        :root {
+            --bg-color: #f5f2e9;
+            --mat-color: #d2b48c;
+            --accent: #5d6d31;
+            --text: #3e2723;
+            --slot-border: rgba(255, 255, 255, 0.6);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            background: var(--accent);
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+
+        .stats { display: flex; gap: 20px; font-weight: bold; }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            gap: 10px;
+            overflow: hidden;
+        }
+
+        .instruction {
+            background: #fff9c4;
+            padding: 10px;
+            border-radius: 30px;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-size: 0.95rem;
+        }
+
+        #game-board {
+            flex: 1;
+            position: relative;
+            background: #e9e4d8;
+            border: 6px solid #c4b8a2;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        /* 茶墊 */
+        #tea-mat {
+            position: absolute;
+            width: 96%;
+            height: 94%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--mat-color);
+            background-image: repeating-linear-gradient(90deg, transparent, transparent 18px, rgba(0,0,0,0.04) 18px, rgba(0,0,0,0.04) 20px);
+            border-radius: 12px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        /* 桌旗 */
+        #table-runner {
+            position: absolute;
+            top: 30%;
+            left: 0;
+            width: 100%;
+            height: 55%;
+            background-color: #8c7866;
+            background-image: linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px),
+                              linear-gradient(0deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+            background-size: 12px 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            border-top: 3px solid #6b5848;
+            border-bottom: 3px solid #6b5848;
+            z-index: 0;
+        }
+
+        /* 放置槽 */
+        .slot {
+            position: absolute;
+            border: 3px dashed var(--slot-border);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s;
+        }
+        .slot.highlight { background: rgba(255, 255, 255, 0.5); border-color: var(--accent); transform: scale(1.05); }
+        .slot.filled { border: none; }
+
+        /* 字卡槽位 (重疊於物品上) */
+        .label-slot {
+            position: absolute;
+            width: 70px;
+            height: 28px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px dashed #888;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            color: #444;
+            z-index: 50;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        .label-slot.highlight { background: rgba(93, 109, 49, 0.3); border-color: var(--accent); }
+        .label-slot.filled { border: none; background: transparent; box-shadow: none; }
+
+        /* 圖片器具樣式 */
+        .item {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: grab;
+            touch-action: none;
+        }
+        .item img {
+            max-width: 140%;
+            max-height: 140%;
+            pointer-events: none;
+            object-fit: contain;
+            filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.35)); /* 陰影提升立體感 */
+        }
+
+        /* 字卡樣式 */
+        .name-tag {
+            background: var(--accent);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            cursor: grab;
+            touch-action: none;
+            white-space: nowrap;
+        }
+
+        /* 底部工具欄 */
+        #inventory {
+            height: 130px;
+            background: white;
+            border-radius: 15px;
+            display: flex;
+            gap: 12px;
+            padding: 10px;
+            overflow-x: auto;
+            align-items: center;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .inv-cell {
+            min-width: 95px;
+            height: 95px;
+            background: #fafafa;
+            border: 1px solid #eee;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            flex-shrink: 0;
+            transition: opacity 0.3s;
+        }
+
+        /* 結算視窗 (縮小並懸浮在左下角，絕不遮擋中央茶席) */
+        #result-dialog {
+            position: fixed;
+            bottom: 25px; 
+            left: 25px;
+            background: rgba(255,255,255,0.96);
+            padding: 15px 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: 3px solid var(--accent);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            animation: popIn 0.5s ease-out forwards;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        #result-dialog h2 { margin: 0 0 10px 0; color: var(--accent); font-size: 1.2rem;}
+        #result-dialog button { background: var(--accent); color: white; border: none; padding: 8px 20px; border-radius: 20px; cursor: pointer; margin-top: 10px; font-weight: bold; font-size: 0.9rem;}
+    </style>
+</head>
+<body>
+
+<header>
+    <div>🍵 茶席擺設</div>
+    <div class="stats">
+        <span>進度: <span id="prog">0</span> / 32</span>
+        <span>時間: <span id="timer">00:00</span></span>
+    </div>
+</header>
+
+<main>
+    <div class="instruction" id="hint">【第一階段】擺放器具：請將用具拖曳到正確位置。放錯了可直接拖回或修正位置！</div>
+    <div id="game-board">
+        <div id="tea-mat">
+            <div id="table-runner"></div>
+        </div>
+    </div>
+    <div id="inventory"></div>
+</main>
+
+<!-- 結算視窗 (懸浮於左下角) -->
+<div id="result-dialog">
+    <h2>🎉 恭喜完成！</h2>
+    <p style="margin: 0; font-size: 0.85rem;">完美的茶席配置。</p>
+    <p style="font-size: 1.1rem; font-weight: bold; margin: 8px 0;">總用時: <span id="final-time">00:00</span></p>
+    <button onclick="location.reload()">再玩一次</button>
+</div>
+
+<script>
+    // 疊加用具加入了 scale 屬性，確保疊上去時能完美置中並保持真實比例
+    // 💡 這裡已經全部替換為英文檔名，並且全部統一為 .png 格式！
+    const itemTypes = {
+        waste_bowl: { id: 'waste_bowl', name: '茶盂', img: 'waste_bowl.png', max: 1 },
+        teapot_stand: { id: 'teapot_stand', name: '壺承', img: 'teapot_stand.png', max: 1 },
+        pitcher: { id: 'pitcher', name: '勻杯', img: 'pitcher.png', max: 1 },
+        cloth: { id: 'cloth', name: '潔方巾', img: 'cloth.png', max: 1 },
+        scoop_rest: { id: 'scoop_rest', name: '則置', img: 'scoop_rest.png', max: 1 },
+        caddy: { id: 'caddy', name: '茶倉', img: 'caddy.png', max: 1 },
+        lid_rest: { id: 'lid_rest', name: '蓋置', img: 'lid_rest.png', max: 1 },
+        // 疊加物品自動縮小，營造空間透視感
+        teapot: { id: 'teapot', name: '茶壺', img: 'teapot.png', max: 1, on: 'teapot_stand', scale: '80%' },
+        scoop: { id: 'scoop', name: '茶則', img: 'scoop.png', max: 1, on: 'scoop_rest', scale: '85%' },
+        pick: { id: 'pick', name: '茶撥', img: 'pick.png', max: 1, on: 'scoop_rest', scale: '90%' },
+        saucer: { id: 'saucer', name: '杯托', img: 'saucer.png', max: 5 }, 
+        cup: { id: 'cup', name: '茶杯', img: 'cup.png', max: 5, on_group: 'saucer', scale: '75%' }
+    };
+
+    // --- 精確座標位置校正 ---
+    const boardSlots = [
+        // 畫面上方：五組杯托 (絕對置中對齊, y:15)
+        { id: 's1', type: 'saucer', x: 20, y: 15, size: 85, group: 'saucer' },
+        { id: 's2', type: 'saucer', x: 35, y: 15, size: 85, group: 'saucer' },
+        { id: 's3', type: 'saucer', x: 50, y: 15, size: 85, group: 'saucer' }, // 正中央杯
+        { id: 's4', type: 'saucer', x: 65, y: 15, size: 85, group: 'saucer' },
+        { id: 's5', type: 'saucer', x: 80, y: 15, size: 85, group: 'saucer' },
+        
+        // 正中央：壺承 (完美對齊中間杯 x: 50)
+        { id: 'teapot_stand', type: 'teapot_stand', x: 50, y: 55, size: 140 },
+        
+        // 左手邊：只有茶倉，淨空其他
+        { id: 'caddy', type: 'caddy', x: 20, y: 60, size: 115 },
+        
+        // 最右邊：茶盂
+        { id: 'waste_bowl', type: 'waste_bowl', x: 90, y: 60, size: 120 },
+        
+        // --- 右側群組精準配置 ---
+        // 蓋置：在茶壺右下角
+        { id: 'lid_rest', type: 'lid_rest', x: 60, y: 75, size: 60 },
+        // 則置：在茶盂左上角
+        { id: 'scoop_rest', type: 'scoop_rest', x: 80, y: 38, size: 120 },
+        // 勻杯跟潔方巾：介於蓋置與則置之間 (互相交換)
+        { id: 'pitcher', type: 'pitcher', x: 70, y: 52, size: 90 },
+        // 潔方巾：在勻杯正下方，並縮小尺寸且保持不沾黏的完美距離
+        { id: 'cloth', type: 'cloth', x: 70, y: 76, size: 45 } 
+    ];
+
+    // --- 第二階段字卡：上下交錯疊加設計 ---
+    const labelConfig = {
+        // 中央杯組
+        '茶杯': { x: 50, y: 5 },   // 疊在上緣
+        '杯托': { x: 50, y: 26 },  // 疊在下緣，避免遮擋
+        
+        // 中央茶壺組 
+        '茶壺': { x: 50, y: 44 },  
+        '壺承': { x: 50, y: 68 },  
+        
+        // 兩側與單品
+        '茶倉': { x: 20, y: 60 },  
+        '茶盂': { x: 90, y: 60 },  
+        
+        '蓋置': { x: 60, y: 89 },  
+        '勻杯': { x: 70, y: 52 },  
+        '潔方巾': { x: 70, y: 89 }, 
+        
+        // 則置群組 (茶則、茶撥、則置) 階梯交錯排列，視覺層次分明
+        '茶撥': { x: 80, y: 26 },  // 最上方
+        '茶則': { x: 80, y: 38 },  // 中間
+        '則置': { x: 80, y: 50 }   // 最下方
+    };
+
+    let score = 0, phase = 1, startTime, timerInt;
+    let placedCounts = {};
+    const mat = document.getElementById('tea-mat');
+    const inv = document.getElementById('inventory');
+
+    function init() {
+        boardSlots.forEach(s => {
+            const slot = document.createElement('div');
+            slot.className = 'slot'; 
+            slot.id = `slot-${s.id}`;
+            if (s.group) slot.dataset.group = s.group;
+            slot.style.cssText = `width:${s.size}px; height:${s.size}px; left:calc(${s.x}% - ${s.size/2}px); top:calc(${s.y}% - ${s.size/2}px);`;
+            mat.appendChild(slot);
+        });
+        loadPhase1();
+    }
+
+    function loadPhase1() {
+        Object.values(itemTypes).sort(() => Math.random() - 0.5).forEach(type => {
+            const cell = document.createElement('div'); 
+            cell.className = 'inv-cell';
+            const item = document.createElement('div'); 
+            item.className = 'item'; 
+            item.dataset.id = type.id;
+            const img = document.createElement('img'); 
+            img.src = type.img; 
+            img.alt = type.name;
+            img.onerror = () => { img.style.display='none'; item.innerText = type.name; };
+            item.appendChild(img);
+            cell.appendChild(item); 
+            inv.appendChild(cell); 
+            setupInventoryDrag(item, false);
+        });
+    }
+
+    // 從底部工具欄拖曳
+    function setupInventoryDrag(el, isLabel) {
+        let isDraging = false, sx, sy, il, it;
+        let clone = null; 
+
+        const start = (e) => {
+            if (!startTime) { startTime = Date.now(); timerInt = setInterval(updateTime, 1000); }
+            if (el.parentElement.style.opacity === '0.3') return; 
+            
+            isDraging = true; 
+            const p = e.touches ? e.touches[0] : e;
+            sx = p.clientX; sy = p.clientY; 
+            const r = el.getBoundingClientRect();
+            
+            clone = el.cloneNode(true);
+            clone.style.cssText = `position:fixed; width:${r.width}px; height:${r.height}px; left:${r.left}px; top:${r.top}px; z-index:9999; margin:0; cursor:grabbing;`;
+            document.body.appendChild(clone);
+
+            il = r.left; it = r.top;
+
+            window.addEventListener('mousemove', move); 
+            window.addEventListener('touchmove', move, {passive:false});
+            window.addEventListener('mouseup', end); 
+            window.addEventListener('touchend', end);
+        };
+
+        const move = (e) => {
+            if (!isDraging || !clone) return; 
+            e.preventDefault();
+            const p = e.touches ? e.touches[0] : e;
+            clone.style.left = (il + (p.clientX - sx)) + 'px'; 
+            clone.style.top = (it + (p.clientY - sy)) + 'px';
+            
+            clone.style.pointerEvents = 'none'; 
+            checkHover(p.clientX, p.clientY);
+            clone.style.pointerEvents = 'auto';
+        };
+
+        const end = (e) => {
+            if (!isDraging || !clone) return; 
+            isDraging = false; 
+            const p = e.changedTouches ? e.changedTouches[0] : e;
+            
+            clone.style.pointerEvents = 'none';
+            const target = getTarget(p.clientX, p.clientY);
+            clone.style.pointerEvents = 'auto';
+            
+            if (target && checkMatch(clone, target, isLabel)) {
+                // 讀取縮放比例，創造完美疊加視覺
+                let typeDef = itemTypes[clone.dataset.id];
+                let scaleStr = (!isLabel && typeDef && typeDef.scale) ? typeDef.scale : '100%';
+                
+                clone.style.cssText = `position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:${scaleStr}; height:${scaleStr}; z-index:10; cursor:grab;`;
+                if (isLabel) {
+                    clone.style.cssText = 'position:relative; margin:auto; z-index:60; cursor:grab;';
+                    target.innerHTML = '';
+                }
+                target.appendChild(clone); 
+                target.classList.add('filled');
+                
+                score++; 
+                document.getElementById('prog').innerText = score;
+
+                if (!isLabel) {
+                    let typeId = clone.dataset.id;
+                    placedCounts[typeId] = (placedCounts[typeId] || 0) + 1;
+                    if (placedCounts[typeId] >= itemTypes[typeId].max) {
+                        el.parentElement.style.opacity = '0.3'; 
+                        el.parentElement.style.pointerEvents = 'none'; 
+                    }
+                } else {
+                    el.parentElement.style.opacity = '0.3';
+                    el.parentElement.style.pointerEvents = 'none';
+                }
+
+                setupBoardDrag(clone, isLabel); 
+                checkPhaseProgression();
+            } else { 
+                clone.remove(); 
+            }
+            
+            document.querySelectorAll('.slot, .label-slot').forEach(s => s.classList.remove('highlight'));
+            window.removeEventListener('mousemove', move); 
+            window.removeEventListener('touchmove', move);
+            clone = null;
+        };
+        
+        el.addEventListener('mousedown', start); 
+        el.addEventListener('touchstart', start, {passive:false});
+    }
+
+    // 在茶墊上進行再次修正拖曳
+    function setupBoardDrag(el, isLabel) {
+        let isDraging = false, sx, sy, il, it;
+
+        const start = (e) => {
+            if (phase === 2 && !isLabel) return;
+
+            // 防呆機制：如果底座上已經疊了東西，底座不能被拖走
+            const typeId = el.dataset.id;
+            const parentSlot = el.parentElement;
+            if (!isLabel && parentSlot && parentSlot.classList.contains('slot')) {
+                if (parentSlot.id === `slot-${typeId}`) {
+                    if (parentSlot.querySelectorAll('.item').length > 1) {
+                        el.style.transform = 'translate(-50%, -50%) scale(0.95)';
+                        setTimeout(() => el.style.transform = 'translate(-50%, -50%) scale(1)', 150);
+                        return;
+                    }
+                }
+            }
+
+            isDraging = true;
+            const p = e.touches ? e.touches[0] : e;
+            sx = p.clientX; sy = p.clientY;
+            const r = el.getBoundingClientRect();
+            il = r.left; it = r.top;
+
+            score--;
+            document.getElementById('prog').innerText = score;
+            if (!isLabel) {
+                placedCounts[typeId]--;
+                const invCell = document.querySelector(`.inv-cell .item[data-id="${typeId}"]`).parentElement;
+                invCell.style.opacity = '1';
+                invCell.style.pointerEvents = 'auto';
+            } else {
+                const invCell = document.querySelector(`.inv-cell .name-tag[data-val="${el.dataset.val}"]`).parentElement;
+                invCell.style.opacity = '1';
+                invCell.style.pointerEvents = 'auto';
+            }
+
+            el.style.cssText = `position:fixed; width:${r.width}px; height:${r.height}px; left:${il}px; top:${it}px; z-index:9999; margin:0; cursor:grabbing;`;
+            document.body.appendChild(el);
+
+            if (parentSlot && (parentSlot.classList.contains('slot') || parentSlot.classList.contains('label-slot'))) {
+                if (parentSlot.querySelectorAll('.item, .name-tag').length === 0) {
+                    parentSlot.classList.remove('filled');
+                }
+            }
+
+            window.addEventListener('mousemove', move);
+            window.addEventListener('touchmove', move, {passive:false});
+            window.addEventListener('mouseup', end);
+            window.addEventListener('touchend', end);
+        };
+
+        const move = (e) => {
+            if (!isDraging) return;
+            e.preventDefault();
+            const p = e.touches ? e.touches[0] : e;
+            el.style.left = (il + (p.clientX - sx)) + 'px';
+            el.style.top = (it + (p.clientY - sy)) + 'px';
+            
+            el.style.pointerEvents = 'none';
+            checkHover(p.clientX, p.clientY);
+            el.style.pointerEvents = 'auto';
+        };
+
+        const end = (e) => {
+            if (!isDraging) return;
+            isDraging = false;
+            const p = e.changedTouches ? e.changedTouches[0] : e;
+            
+            el.style.pointerEvents = 'none';
+            const target = getTarget(p.clientX, p.clientY);
+            el.style.pointerEvents = 'auto';
+
+            if (target && checkMatch(el, target, isLabel)) {
+                
+                let typeDef = itemTypes[el.dataset.id];
+                let scaleStr = (!isLabel && typeDef && typeDef.scale) ? typeDef.scale : '100%';
+
+                el.style.cssText = `position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:${scaleStr}; height:${scaleStr}; z-index:10; cursor:grab;`;
+                if (isLabel) {
+                    el.style.cssText = 'position:relative; margin:auto; z-index:60; cursor:grab;';
+                    target.innerHTML = '';
+                }
+                target.appendChild(el);
+                target.classList.add('filled');
+                
+                score++;
+                document.getElementById('prog').innerText = score;
+
+                if (!isLabel) {
+                    const typeId = el.dataset.id;
+                    placedCounts[typeId]++;
+                    if (placedCounts[typeId] >= itemTypes[typeId].max) {
+                        const invCell = document.querySelector(`.inv-cell .item[data-id="${typeId}"]`).parentElement;
+                        invCell.style.opacity = '0.3';
+                        invCell.style.pointerEvents = 'none';
+                    }
+                } else {
+                    const invCell = document.querySelector(`.inv-cell .name-tag[data-val="${el.dataset.val}"]`).parentElement;
+                    invCell.style.opacity = '0.3';
+                    invCell.style.pointerEvents = 'none';
+                }
+
+                checkPhaseProgression();
+            } else {
+                el.remove(); // 放錯地方退回工具列
+            }
+
+            document.querySelectorAll('.slot, .label-slot').forEach(s => s.classList.remove('highlight'));
+            window.removeEventListener('mousemove', move);
+            window.removeEventListener('touchmove', move);
+        };
+
+        el.addEventListener('mousedown', start);
+        el.addEventListener('touchstart', start, {passive:false});
+    }
+
+    function getTarget(x, y) {
+        const hits = document.elementsFromPoint(x, y);
+        return hits.find(h => h.classList.contains(phase === 1 ? 'slot' : 'label-slot'));
+    }
+
+    function checkHover(x, y) {
+        document.querySelectorAll('.slot, .label-slot').forEach(s => s.classList.remove('highlight'));
+        const t = getTarget(x, y); 
+        if (t) t.classList.add('highlight');
+    }
+
+    function checkMatch(cloneEl, t, isLabel) {
+        if (phase === 1 && !isLabel) {
+            const typeId = cloneEl.dataset.id;
+            const typeDef = itemTypes[typeId];
+            if (!t.classList.contains('slot')) return false;
+
+            if (!typeDef.on && !typeDef.on_group) {
+                const slotConf = boardSlots.find(s => `slot-${s.id}` === t.id);
+                if (slotConf && slotConf.type === typeId && !t.classList.contains('filled')) return true;
+            }
+            if (typeDef.on) {
+                if (`slot-${typeDef.on}` === t.id && t.classList.contains('filled')) {
+                    if (t.querySelectorAll(`.item[data-id="${typeId}"]`).length === 0) return true;
+                }
+            }
+            if (typeDef.on_group) {
+                if (t.dataset.group === typeDef.on_group && t.classList.contains('filled')) {
+                    if (t.querySelectorAll(`.item[data-id="${typeId}"]`).length === 0) return true;
+                }
+            }
+        } else if (phase === 2 && isLabel) { 
+            return t.dataset.match === cloneEl.dataset.val && !t.classList.contains('filled'); 
+        }
+        return false;
+    }
+
+    function checkPhaseProgression() {
+        if (phase === 1 && score === 20) {
+            setTimeout(loadPhase2, 800);
+        } else if (phase === 2 && score === 32) {
+            finishGame();
+        }
+    }
+
+    function loadPhase2() {
+        if (phase === 2) return;
+        inv.innerHTML = ''; phase = 2;
+        document.getElementById('hint').innerText = "【第二階段】配對名稱：請將字卡拖曳到對應的物品上方。";
+        
+        Object.entries(labelConfig).forEach(([name, pos]) => {
+            const ls = document.createElement('div');
+            ls.className = 'label-slot';
+            ls.dataset.match = name;
+            ls.innerText = "?";
+            ls.style.cssText = `left: calc(${pos.x}% - 35px); top: calc(${pos.y}% - 14px); display: flex;`;
+            mat.appendChild(ls);
+        });
+
+        const uniqueNames = Object.keys(labelConfig).sort(() => Math.random() - 0.5);
+        uniqueNames.forEach(n => {
+            const cell = document.createElement('div'); cell.className = 'inv-cell';
+            const tag = document.createElement('div'); tag.className = 'name-tag'; tag.innerText = n; tag.dataset.val = n;
+            cell.appendChild(tag); inv.appendChild(cell); setupInventoryDrag(tag, true);
+        });
+    }
+
+    function updateTime() {
+        const s = Math.floor((Date.now() - startTime) / 1000);
+        document.getElementById('timer').innerText = `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
+    }
+
+    function finishGame() {
+        clearInterval(timerInt);
+        document.getElementById('final-time').innerText = document.getElementById('timer').innerText;
+        document.getElementById('result-dialog').style.display = 'flex';
+    }
+</script>
+</body>
+</html>
+```

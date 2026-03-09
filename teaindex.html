@@ -143,8 +143,8 @@
             touch-action: none;
         }
         .item img {
-            max-width: 140%;
-            max-height: 140%;
+            max-width: 160%; /* 放大了工具欄位內的圖片比例 */
+            max-height: 160%;
             pointer-events: none;
             object-fit: contain;
             filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.35)); /* 陰影提升立體感 */
@@ -166,7 +166,7 @@
 
         /* 底部工具欄 */
         #inventory {
-            height: 130px;
+            height: 140px; /* 加高工具欄以容納更大的圖片 */
             background: white;
             border-radius: 15px;
             display: flex;
@@ -178,8 +178,8 @@
         }
 
         .inv-cell {
-            min-width: 95px;
-            height: 95px;
+            min-width: 110px; /* 加寬工具欄位格 */
+            height: 110px;    /* 加高工具欄位格 */
             background: #fafafa;
             border: 1px solid #eee;
             border-radius: 12px;
@@ -272,43 +272,43 @@
         scoop: { id: 'scoop', name: '茶則', img: 'scoop.png', max: 1, on: 'scoop_rest', scale: '85%' },
         pick: { id: 'pick', name: '茶撥', img: 'pick.png', max: 1, on: 'scoop_rest', scale: '90%' },
         saucer: { id: 'saucer', name: '杯托', img: 'saucer.png', max: 5 }, 
-        cup: { id: 'cup', name: '茶杯', img: 'cup.png', max: 5, on_group: 'saucer', scale: '75%' }
+        cup: { id: 'cup', name: '茶杯', img: 'cup.png', max: 5, on_group: 'saucer', scale: '80%' } // 稍微放大茶杯在杯托上的比例
     };
 
-    // --- 精確座標位置校正 ---
+    // --- 精確座標位置校正 (整體放大尺寸) ---
     const boardSlots = [
-        // 畫面上方：五組杯托 (絕對置中對齊, y:15)
-        { id: 's1', type: 'saucer', x: 20, y: 15, size: 85, group: 'saucer' },
-        { id: 's2', type: 'saucer', x: 35, y: 15, size: 85, group: 'saucer' },
-        { id: 's3', type: 'saucer', x: 50, y: 15, size: 85, group: 'saucer' }, // 正中央杯
-        { id: 's4', type: 'saucer', x: 65, y: 15, size: 85, group: 'saucer' },
-        { id: 's5', type: 'saucer', x: 80, y: 15, size: 85, group: 'saucer' },
+        // 畫面上方：五組杯托 (絕對置中對齊, y:15)，尺寸從 85 放大到 100
+        { id: 's1', type: 'saucer', x: 20, y: 18, size: 100, group: 'saucer' },
+        { id: 's2', type: 'saucer', x: 35, y: 18, size: 100, group: 'saucer' },
+        { id: 's3', type: 'saucer', x: 50, y: 18, size: 100, group: 'saucer' }, // 正中央杯
+        { id: 's4', type: 'saucer', x: 65, y: 18, size: 100, group: 'saucer' },
+        { id: 's5', type: 'saucer', x: 80, y: 18, size: 100, group: 'saucer' },
         
-        // 正中央：壺承 (完美對齊中間杯 x: 50)
-        { id: 'teapot_stand', type: 'teapot_stand', x: 50, y: 55, size: 140 },
+        // 正中央：壺承 (完美對齊中間杯 x: 50)，尺寸從 140 放大到 160
+        { id: 'teapot_stand', type: 'teapot_stand', x: 50, y: 55, size: 160 },
         
-        // 左手邊：只有茶倉，淨空其他
-        { id: 'caddy', type: 'caddy', x: 20, y: 60, size: 115 },
+        // 左手邊：只有茶倉，淨空其他，尺寸從 115 放大到 130
+        { id: 'caddy', type: 'caddy', x: 20, y: 60, size: 130 },
         
-        // 最右邊：茶盂
-        { id: 'waste_bowl', type: 'waste_bowl', x: 90, y: 60, size: 120 },
+        // 最右邊：茶盂，尺寸從 120 放大到 140
+        { id: 'waste_bowl', type: 'waste_bowl', x: 90, y: 60, size: 140 },
         
         // --- 右側群組精準配置 ---
-        // 蓋置：在茶壺右下角
-        { id: 'lid_rest', type: 'lid_rest', x: 60, y: 75, size: 60 },
-        // 則置：在茶盂左上角
-        { id: 'scoop_rest', type: 'scoop_rest', x: 80, y: 38, size: 120 },
-        // 勻杯跟潔方巾：介於蓋置與則置之間 (互相交換)
-        { id: 'pitcher', type: 'pitcher', x: 70, y: 52, size: 90 },
-        // 潔方巾：在勻杯正下方，並縮小尺寸且保持不沾黏的完美距離
-        { id: 'cloth', type: 'cloth', x: 70, y: 76, size: 45 } 
+        // 蓋置：在茶壺右下角，尺寸從 60 放大到 75
+        { id: 'lid_rest', type: 'lid_rest', x: 60, y: 75, size: 75 },
+        // 則置：在茶盂左上角，尺寸從 120 放大到 140
+        { id: 'scoop_rest', type: 'scoop_rest', x: 80, y: 38, size: 140 },
+        // 勻杯跟潔方巾：介於蓋置與則置之間 (互相交換)，勻杯尺寸從 90 放大到 105
+        { id: 'pitcher', type: 'pitcher', x: 70, y: 52, size: 105 },
+        // 潔方巾：在勻杯正下方，尺寸從 45 放大到 60
+        { id: 'cloth', type: 'cloth', x: 70, y: 76, size: 60 } 
     ];
 
-    // --- 第二階段字卡：上下交錯疊加設計 ---
+    // --- 第二階段字卡：上下交錯疊加設計 (隨器具放大稍微調整座標) ---
     const labelConfig = {
         // 中央杯組
-        '茶杯': { x: 50, y: 5 },   // 疊在上緣
-        '杯托': { x: 50, y: 26 },  // 疊在下緣，避免遮擋
+        '茶杯': { x: 50, y: 8 },   // 疊在上緣
+        '杯托': { x: 50, y: 28 },  // 疊在下緣，避免遮擋
         
         // 中央茶壺組 
         '茶壺': { x: 50, y: 44 },  

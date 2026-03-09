@@ -144,8 +144,13 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            /* cursor 改為 grab，觸控時依賴 JS 邏輯判斷 */
             cursor: grab;
-            touch-action: none;
+            /* 允許 Y 軸 (可能需要)，但我們主要處理 X 軸滑動 */
+            touch-action: pan-x pan-y;
+        }
+        .item.dragging {
+            cursor: grabbing;
         }
         .item img {
             max-width: 140%; 
@@ -165,8 +170,11 @@
             font-size: 0.9rem;
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
             cursor: grab;
-            touch-action: none;
+            touch-action: pan-x pan-y;
             white-space: nowrap;
+        }
+        .name-tag.dragging {
+            cursor: grabbing;
         }
 
         /* 底部工具欄外層容器 */
@@ -291,7 +299,7 @@
 </header>
 
 <main>
-    <div class="instruction" id="hint">【第一階段】擺放器具：請將用具拖曳到正確位置。放錯了可直接拖回或修正位置！</div>
+    <div class="instruction" id="hint">【第一階段】擺放器具：長按器具並拖曳到正確位置。放錯了可直接拖回或修正位置！</div>
     <div id="game-board">
         <div id="tea-mat">
             <div id="table-runner"></div>
@@ -300,7 +308,7 @@
     
     <!-- 將提示文字與工具列包裝在一起，實現全區塊皆可滑動 -->
     <div id="inventory-wrapper">
-        <div class="scroll-hint">⬅️ 左右滑動下方工具列查看更多器具 ➡️</div>
+        <div class="scroll-hint">⬅️ 左右滑動下方工具列，長按器具拖曳 ➡️</div>
         <div id="inventory"></div>
     </div>
 </main>
@@ -395,33 +403,77 @@
 
     function setupInventoryDrag(el, isLabel) {
         let isDraging = false, sx, sy, il, it;
-        let clone = null; 
+        let clone = null;
+        let pressTimer = null; // 用於判斷長按
+        let isScrolling = false; // 判斷是否正在滑動
+        const PRESS_DELAY = 150; // 長按延遲毫秒數，稍微按住即可觸發拖曳
 
-        const start = (e) => {
-            if (!startTime) { startTime = Date.now(); timerInt = setInterval(updateTime, 1000); }
-            if (el.parentElement.style.opacity === '0.3') return; 
-            
+        const startDragAction = (clientX, clientY) => {
+            if (isScrolling) return; // 如果已經判定為滑動，則不觸發拖曳
+
             isDraging = true; 
-            const p = e.touches ? e.touches[0] : e;
-            sx = p.clientX; sy = p.clientY; 
+            el.classList.add('dragging'); // 可選：加入拖曳中的視覺回饋
+            
+            // 防止滾動干擾
+            document.body.style.overflow = 'hidden'; 
+
             const r = el.getBoundingClientRect();
             
             clone = el.cloneNode(true);
+            clone.classList.remove('dragging');
             clone.style.cssText = `position:fixed; width:${r.width}px; height:${r.height}px; left:${r.left}px; top:${r.top}px; z-index:9999; margin:0; cursor:grabbing;`;
             document.body.appendChild(clone);
 
             il = r.left; it = r.top;
+            sx = clientX; sy = clientY;
 
-            window.addEventListener('mousemove', move); 
-            window.addEventListener('touchmove', move, {passive:false});
-            window.addEventListener('mouseup', end); 
-            window.addEventListener('touchend', end);
+            // 將 clone 移到手指正下方 (可選，讓拖曳感覺更跟手)
+            clone.style.left = (clientX - r.width / 2) + 'px';
+            clone.style.top = (clientY - r.height / 2) + 'px';
+            il = clientX - r.width / 2;
+            it = clientY - r.height / 2;
         };
 
-        const move = (e) => {
-            if (!isDraging || !clone) return; 
-            e.preventDefault();
+        const handleStart = (e) => {
+            if (!startTime) { startTime = Date.now(); timerInt = setInterval(updateTime, 1000); }
+            if (el.parentElement.style.opacity === '0.3') return; 
+            
+            isScrolling = false;
             const p = e.touches ? e.touches[0] : e;
+            sx = p.clientX; sy = p.clientY;
+
+            // 設定長按計時器
+            pressTimer = setTimeout(() => {
+                if (!isScrolling) {
+                    startDragAction(p.clientX, p.clientY);
+                }
+            }, PRESS_DELAY);
+
+            // 加入事件監聽，注意 passive 設為 false 允許 preventDefault
+            window.addEventListener('mousemove', handleMove, { passive: false }); 
+            window.addEventListener('touchmove', handleMove, { passive: false });
+            window.addEventListener('mouseup', handleEnd); 
+            window.addEventListener('touchend', handleEnd);
+            // 當觸控被系統取消時也要處理 (例如滑出螢幕)
+            window.addEventListener('touchcancel', handleEnd);
+        };
+
+        const handleMove = (e) => {
+            const p = e.touches ? e.touches[0] : e;
+
+            if (!isDraging) {
+                // 如果還沒開始拖曳，判斷是否為滑動
+                if (Math.abs(p.clientX - sx) > 10 || Math.abs(p.clientY - sy) > 10) {
+                    isScrolling = true;
+                    clearTimeout(pressTimer); // 取消長按判定
+                    // 如果是 touchmove 且已經判定為滑動，不阻止預設行為，讓捲軸自然捲動
+                }
+                return; 
+            }
+
+            // 如果正在拖曳，阻止預設滑動行為
+            e.preventDefault(); 
+            
             clone.style.left = (il + (p.clientX - sx)) + 'px'; 
             clone.style.top = (it + (p.clientY - sy)) + 'px';
             
@@ -430,8 +482,22 @@
             clone.style.pointerEvents = 'auto';
         };
 
-        const end = (e) => {
-            if (!isDraging || !clone) return; 
+        const handleEnd = (e) => {
+            clearTimeout(pressTimer); // 清除長按計時器
+            el.classList.remove('dragging');
+            document.body.style.overflow = ''; // 恢復滾動
+
+            window.removeEventListener('mousemove', handleMove); 
+            window.removeEventListener('touchmove', handleMove);
+            window.removeEventListener('mouseup', handleEnd); 
+            window.removeEventListener('touchend', handleEnd);
+            window.removeEventListener('touchcancel', handleEnd);
+
+            if (!isDraging || !clone) {
+                isDraging = false;
+                return; // 如果沒有在拖曳，直接結束
+            }
+
             isDraging = false; 
             const p = e.changedTouches ? e.changedTouches[0] : e;
             
@@ -473,19 +539,21 @@
             }
             
             document.querySelectorAll('.slot, .label-slot').forEach(s => s.classList.remove('highlight'));
-            window.removeEventListener('mousemove', move); 
-            window.removeEventListener('touchmove', move);
             clone = null;
         };
         
-        el.addEventListener('mousedown', start); 
-        el.addEventListener('touchstart', start, {passive:false});
+        el.addEventListener('mousedown', handleStart); 
+        // passive: false 允許在 touchmove 時阻止預設行為 (但我們現在根據情況決定是否阻止)
+        el.addEventListener('touchstart', handleStart, {passive: false});
     }
 
     function setupBoardDrag(el, isLabel) {
         let isDraging = false, sx, sy, il, it;
+        let pressTimer = null;
+        let isScrolling = false;
+        const PRESS_DELAY = 150;
 
-        const start = (e) => {
+        const startDragAction = (clientX, clientY) => {
             if (phase === 2 && !isLabel) return;
 
             const typeId = el.dataset.id;
@@ -501,8 +569,8 @@
             }
 
             isDraging = true;
-            const p = e.touches ? e.touches[0] : e;
-            sx = p.clientX; sy = p.clientY;
+            document.body.style.overflow = 'hidden';
+            
             const r = el.getBoundingClientRect();
             il = r.left; it = r.top;
 
@@ -522,22 +590,52 @@
             el.style.cssText = `position:fixed; width:${r.width}px; height:${r.height}px; left:${il}px; top:${it}px; z-index:9999; margin:0; cursor:grabbing;`;
             document.body.appendChild(el);
 
+            // 移動到手指位置
+            el.style.left = (clientX - r.width / 2) + 'px';
+            el.style.top = (clientY - r.height / 2) + 'px';
+            il = clientX - r.width / 2;
+            it = clientY - r.height / 2;
+            sx = clientX; sy = clientY;
+
             if (parentSlot && (parentSlot.classList.contains('slot') || parentSlot.classList.contains('label-slot'))) {
                 if (parentSlot.querySelectorAll('.item, .name-tag').length === 0) {
                     parentSlot.classList.remove('filled');
                 }
             }
-
-            window.addEventListener('mousemove', move);
-            window.addEventListener('touchmove', move, {passive:false});
-            window.addEventListener('mouseup', end);
-            window.addEventListener('touchend', end);
         };
 
-        const move = (e) => {
-            if (!isDraging) return;
-            e.preventDefault();
+        const handleStart = (e) => {
+            isScrolling = false;
             const p = e.touches ? e.touches[0] : e;
+            sx = p.clientX; sy = p.clientY;
+
+            // 桌面上的物品因為不需要滑動捲軸，可以縮短判定時間或直接觸發
+            // 這裡為了保持操作一致性，仍使用短暫延遲
+            pressTimer = setTimeout(() => {
+                if (!isScrolling) {
+                    startDragAction(p.clientX, p.clientY);
+                }
+            }, 50); // 桌面物品長按時間更短，反應更靈敏
+
+            window.addEventListener('mousemove', handleMove, {passive: false});
+            window.addEventListener('touchmove', handleMove, {passive: false});
+            window.addEventListener('mouseup', handleEnd);
+            window.addEventListener('touchend', handleEnd);
+            window.addEventListener('touchcancel', handleEnd);
+        };
+
+        const handleMove = (e) => {
+            const p = e.touches ? e.touches[0] : e;
+            
+            if (!isDraging) {
+                 if (Math.abs(p.clientX - sx) > 10 || Math.abs(p.clientY - sy) > 10) {
+                    isScrolling = true;
+                    clearTimeout(pressTimer);
+                }
+                return;
+            }
+
+            e.preventDefault();
             el.style.left = (il + (p.clientX - sx)) + 'px';
             el.style.top = (it + (p.clientY - sy)) + 'px';
             
@@ -546,8 +644,18 @@
             el.style.pointerEvents = 'auto';
         };
 
-        const end = (e) => {
+        const handleEnd = (e) => {
+            clearTimeout(pressTimer);
+            document.body.style.overflow = '';
+
+            window.removeEventListener('mousemove', handleMove);
+            window.removeEventListener('touchmove', handleMove);
+            window.removeEventListener('mouseup', handleEnd);
+            window.removeEventListener('touchend', handleEnd);
+            window.removeEventListener('touchcancel', handleEnd);
+
             if (!isDraging) return;
+            
             isDraging = false;
             const p = e.changedTouches ? e.changedTouches[0] : e;
             
@@ -590,12 +698,10 @@
             }
 
             document.querySelectorAll('.slot, .label-slot').forEach(s => s.classList.remove('highlight'));
-            window.removeEventListener('mousemove', move);
-            window.removeEventListener('touchmove', move);
         };
 
-        el.addEventListener('mousedown', start);
-        el.addEventListener('touchstart', start, {passive:false});
+        el.addEventListener('mousedown', handleStart);
+        el.addEventListener('touchstart', handleStart, {passive: false});
     }
 
     function getTarget(x, y) {

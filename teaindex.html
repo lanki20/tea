@@ -191,6 +191,20 @@
             transition: opacity 0.3s;
         }
 
+        /* 全螢幕背景 (僅用於載入圖片視窗) */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .card { background: white; padding: 40px; border-radius: 25px; text-align: center; max-width: 450px; width: 90%; line-height: 1.6;}
+        .card button { background: var(--accent); color: white; border: none; padding: 12px 30px; border-radius: 30px; cursor: pointer; margin-top: 20px; font-size: 1.1rem; font-weight: bold;}
+        .card button:hover { opacity: 0.9; }
+
         /* 結算視窗 (縮小並懸浮在左下角，絕不遮擋中央茶席) */
         #result-dialog {
             position: fixed;
@@ -246,7 +260,6 @@
 
 <script>
     // 疊加用具加入了 scale 屬性，確保疊上去時能完美置中並保持真實比例
-    // 💡 這裡已經全部替換為英文檔名，並且全部統一為 .png 格式！
     const itemTypes = {
         waste_bowl: { id: 'waste_bowl', name: '茶盂', img: 'waste_bowl.png', max: 1 },
         teapot_stand: { id: 'teapot_stand', name: '壺承', img: 'teapot_stand.png', max: 1 },
@@ -255,7 +268,6 @@
         scoop_rest: { id: 'scoop_rest', name: '則置', img: 'scoop_rest.png', max: 1 },
         caddy: { id: 'caddy', name: '茶倉', img: 'caddy.png', max: 1 },
         lid_rest: { id: 'lid_rest', name: '蓋置', img: 'lid_rest.png', max: 1 },
-        // 疊加物品自動縮小，營造空間透視感
         teapot: { id: 'teapot', name: '茶壺', img: 'teapot.png', max: 1, on: 'teapot_stand', scale: '80%' },
         scoop: { id: 'scoop', name: '茶則', img: 'scoop.png', max: 1, on: 'scoop_rest', scale: '85%' },
         pick: { id: 'pick', name: '茶撥', img: 'pick.png', max: 1, on: 'scoop_rest', scale: '90%' },
@@ -310,10 +322,10 @@
         '勻杯': { x: 70, y: 52 },  
         '潔方巾': { x: 70, y: 89 }, 
         
-        // 則置群組 (茶則、茶撥、則置) 階梯交錯排列，視覺層次分明
-        '茶撥': { x: 80, y: 26 },  // 最上方
-        '茶則': { x: 80, y: 38 },  // 中間
-        '則置': { x: 80, y: 50 }   // 最下方
+        // 則置群組改為左右排列
+        '茶則': { x: 72, y: 32 },  // 左邊
+        '茶撥': { x: 88, y: 32 },  // 右邊
+        '則置': { x: 80, y: 48 }   // 置中於下方
     };
 
     let score = 0, phase = 1, startTime, timerInt;
@@ -638,7 +650,9 @@
         document.getElementById('final-time').innerText = document.getElementById('timer').innerText;
         document.getElementById('result-dialog').style.display = 'flex';
     }
+
+    // 網頁載入完成後自動啟動遊戲
+    window.onload = init;
 </script>
 </body>
 </html>
-```

@@ -147,7 +147,7 @@
             border: 2px dashed #888;
             border-radius: 6px;
             font-weight: bold;
-            display: none;
+            display: flex;
             justify-content: center;
             align-items: center;
             color: #444;
@@ -816,6 +816,7 @@
             ls.className = 'label-slot';
             ls.dataset.match = name;
             ls.innerText = "?";
+            ls.style.display = 'flex';
             mat.appendChild(ls);
         });
 
